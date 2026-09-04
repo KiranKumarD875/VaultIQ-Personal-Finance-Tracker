@@ -12,10 +12,13 @@ export class RedisService implements OnModuleDestroy {
 
     if (redisUrl) {
       // Upstash (cloud) — connect via full URL with TLS built-in
+      const isUpstash = redisUrl.includes('upstash.io') || redisUrl.startsWith('rediss://');
       this.client = new Redis(redisUrl, {
         lazyConnect: true,
-        retryStrategy: () => 2000,
-        tls: redisUrl.startsWith('rediss://') ? {} : undefined,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        retryStrategy: (times) => Math.min(times * 1000, 3000),
+        tls: isUpstash ? { rejectUnauthorized: false } : undefined,
       });
     } else {
       // Local Docker — connect via host/port (no TLS)
@@ -23,7 +26,9 @@ export class RedisService implements OnModuleDestroy {
         host: this.configService.get('redis.host'),
         port: this.configService.get('redis.port'),
         lazyConnect: true,
-        retryStrategy: () => 2000,
+        enableOfflineQueue: false,
+        maxRetriesPerRequest: 1,
+        retryStrategy: (times) => Math.min(times * 1000, 3000),
       });
     }
 

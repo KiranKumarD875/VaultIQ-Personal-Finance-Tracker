@@ -11,11 +11,22 @@ export class CategoriesService {
   ) {}
 
   async findAllForUser(userId: string) {
-    return this.repo
+    const raw = await this.repo
       .createQueryBuilder('c')
       .where('c.user_id = :userId OR c.is_default = true', { userId })
       .orderBy('c.name', 'ASC')
       .getMany();
+      
+    // Deduplicate by name (in case a default and user category share a name, or defaults were seeded twice)
+    const unique = [];
+    const names = new Set();
+    for (const cat of raw) {
+      if (!names.has(cat.name)) {
+        names.add(cat.name);
+        unique.push(cat);
+      }
+    }
+    return unique;
   }
 
   create(userId: string, dto: CreateCategoryDto) {
