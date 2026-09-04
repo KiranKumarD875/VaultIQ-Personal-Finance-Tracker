@@ -5,7 +5,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'VaultIQ — Premium Finance Tracker',
+  title: 'VaultIQ — Personal Finance Tracker',
   description: 'AI-powered personal finance tracker and expense predictor',
 };
 

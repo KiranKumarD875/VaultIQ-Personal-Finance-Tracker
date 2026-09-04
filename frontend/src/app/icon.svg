@@ -1,0 +1,6 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  <!-- Modern Emerald Background -->
+  <rect width="256" height="256" rx="56" fill="#047857" />
+  <!-- Sleek White 'V' Monogram -->
+  <path d="M 75 75 L 128 180 L 181 75" fill="none" stroke="#ffffff" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+</svg>
