@@ -27,10 +27,10 @@ import { ChatModule } from './chat/chat.module';
         password: config.get('database.password'),
         database: config.get('database.name'),
         autoLoadEntities: true,
-        // database/init.sql is now the SINGLE source of truth for schema.
-        // Previously this was `true`, which caused TypeORM and the raw SQL
-        // script to both try to own the schema — a real conflict risk.
         synchronize: false,
+        // Neon (cloud Postgres) requires SSL. Set DB_SSL=true on Render.
+        // Local Docker does NOT need SSL, so we keep it conditional.
+        ssl: config.get('database.ssl') ? { rejectUnauthorized: false } : false,
       }),
     }),
     RedisModule,

@@ -8,12 +8,24 @@ export class RedisService implements OnModuleDestroy {
   private readonly logger = new Logger(RedisService.name);
 
   constructor(private configService: ConfigService) {
-    this.client = new Redis({
-      host: this.configService.get('redis.host'),
-      port: this.configService.get('redis.port'),
-      lazyConnect: true,
-      retryStrategy: () => 2000,
-    });
+    const redisUrl = this.configService.get<string>('redis.url');
+
+    if (redisUrl) {
+      // Upstash (cloud) — connect via full URL with TLS built-in
+      this.client = new Redis(redisUrl, {
+        lazyConnect: true,
+        retryStrategy: () => 2000,
+        tls: redisUrl.startsWith('rediss://') ? {} : undefined,
+      });
+    } else {
+      // Local Docker — connect via host/port (no TLS)
+      this.client = new Redis({
+        host: this.configService.get('redis.host'),
+        port: this.configService.get('redis.port'),
+        lazyConnect: true,
+        retryStrategy: () => 2000,
+      });
+    }
 
     this.client.on('error', (err) => {
       this.logger.warn(`Redis connection issue (caching disabled): ${err.message}`);
