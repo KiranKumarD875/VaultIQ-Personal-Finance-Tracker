@@ -1,2 +1,2 @@
-print("No local models required. VaultMind uses the Groq cloud API.")
+print("No model download required. FinancialQA engine is rule-based.")
 print("Build step complete.")
