@@ -1,62 +1,64 @@
 import os
-from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
-import threading
+from groq import Groq
 
-class LocalRAGService:
+class RAGService:
     def __init__(self):
-        print("Loading local LLM...", flush=True)
-        
-        try:
-            model_id = "Qwen/Qwen2.5-0.5B-Instruct"
-            self.tokenizer = AutoTokenizer.from_pretrained(model_id)
-            model = AutoModelForCausalLM.from_pretrained(model_id)
-            self.llm_pipeline = pipeline(
-                "text-generation",
-                model=model,
-                tokenizer=self.tokenizer,
-                max_new_tokens=200,
-                do_sample=False,
-            )
-            print("Local Models Loaded successfully!", flush=True)
-            self.is_ready = True
-        except Exception as e:
-            print(f"Error loading models: {e}", flush=True)
-            self.is_ready = False
-            self.llm_pipeline = None
+        api_key = os.environ.get("GROQ_API_KEY", "")
+        if not api_key:
+            print("⚠️  GROQ_API_KEY not set. AI responses will be disabled.", flush=True)
+            self.client = None
+        else:
+            self.client = Groq(api_key=api_key)
+            print("✅ Groq AI client initialised (llama-3.1-8b-instant).", flush=True)
+
+    @property
+    def is_ready(self) -> bool:
+        return self.client is not None
 
     def query(self, user_query: str, context_texts: list[str], history: list[dict] = None) -> str:
-        if not self.is_ready or not self.llm_pipeline:
-            return "I am still warming up my AI brain (loading local model). Please try again in a few seconds!"
+        if not self.is_ready:
+            return (
+                "VaultMind AI is not configured. "
+                "Please set the GROQ_API_KEY environment variable on Render."
+            )
 
-        context = ""
-        if context_texts:
-            # The context is small (max 30 txns + summary), so we pass everything directly to the LLM
-            # This guarantees 100% accurate mathematical reasoning without retrieval loss.
-            context = "\n".join(context_texts)
+        # Build the full financial context string
+        context = "\n".join(context_texts) if context_texts else ""
 
-        # Format history for chat template
-        messages = [
-            {"role": "system", "content": f"You are VaultMind, an intelligent and friendly AI financial assistant for VaultIQ. You MUST strictly use the following Financial Context to answer the user's question. Do NOT make up, guess, or hallucinate any numbers or information. If the answer is not in the context, say you don't know.\n\nFinancial Context:\n{context}"}
-        ]
+        system_prompt = (
+            "You are VaultMind, an intelligent and friendly AI financial assistant for VaultIQ. "
+            "You MUST strictly use ONLY the following Financial Context to answer the user's question. "
+            "Quote the exact numbers from the context — do NOT make up, guess, or hallucinate any figures. "
+            "Keep answers concise, clear, and friendly. "
+            "If the answer cannot be found in the context, say: "
+            "\"I don't have enough data to answer that right now.\"\n\n"
+            f"=== Financial Context ===\n{context}\n=== End of Context ==="
+        )
+
+        messages = [{"role": "system", "content": system_prompt}]
+
+        # Append last 5 conversation turns for context continuity
         if history:
             for msg in history[-5:]:
                 role = "user" if msg.get("sender") == "user" else "assistant"
-                messages.append({"role": role, "content": msg.get("text")})
-        
+                content = msg.get("text", "")
+                if content:
+                    messages.append({"role": role, "content": content})
+
         messages.append({"role": "user", "content": user_query})
 
-        prompt = self.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        
         try:
-            result = self.llm_pipeline(prompt)
-            # Pipeline returns the full string (prompt + generation) for CausalLM. We just need the generated part.
-            generated_text = result[0]["generated_text"]
-            if generated_text.startswith(prompt):
-                generated_text = generated_text[len(prompt):]
-            return generated_text.strip()
+            response = self.client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=messages,
+                max_tokens=400,
+                temperature=0.2,   # Low temperature = factual, consistent answers
+            )
+            return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"Error during generation: {e}", flush=True)
+            print(f"Groq API error: {e}", flush=True)
             return "Sorry, I encountered an error while thinking. Please try again."
 
-# Singleton instance
-rag_service = LocalRAGService()
+
+# Singleton instance — zero RAM overhead, no model download needed
+rag_service = RAGService()
