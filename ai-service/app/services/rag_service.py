@@ -27,6 +27,7 @@ class FinancialQAService:
             "savings_rate": None,
             "categories": {},       # {name: amount}
             "category_budgets": {}, # {name: limit}
+            "goals_detail": {},     # {name: {target, saved}}
             "transactions": [],     # [{date, type, amount, category}]
         }
 
@@ -73,6 +74,14 @@ class FinancialQAService:
             if m:
                 data["category_budgets"][m.group(2).strip().title()] = self._num(m.group(1))
 
+            # Goal detail lines: "I have a savings goal called 'Buying iPhone' with a target of ₹50000 and I have saved ₹10000 so far."
+            m = re.search(r'savings goal called "(.+?)" with a target of ₹([\d,\.]+) and i have saved ₹([\d,\.]+)', l)
+            if m:
+                data["goals_detail"][m.group(1).strip().title()] = {
+                    "target": self._num(m.group(2)),
+                    "saved": self._num(m.group(3))
+                }
+
             # Transaction lines: "On 2024-09-01, I had an expense of ₹500 for Shopping."
             m = re.search(r"on ([\d\-]+),\s+i had an? (\w+) of ₹([\d,\.]+) for (.+?)\.", l)
             if m:
@@ -113,6 +122,10 @@ class FinancialQAService:
             return "category"
         if any(w in q for w in ["transaction", "recent", "last", "history", "when"]):
             return "transaction"
+        if any(w in q for w in ["okay", "ok", "thanks", "thank you", "cool", "got it", "nice"]):
+            return "greeting"
+        if any(w in q for w in ["balance it", "advice", "recommend", "suggestion", "what should i do", "how to improve"]):
+            return "advice"
         if any(w in q for w in ["afford", "buy", "purchase", "can i"]):
             return "afford"
         if any(w in q for w in ["summary", "overview", "report", "tell me everything", "how am i doing"]):
@@ -127,21 +140,34 @@ class FinancialQAService:
         data = self._parse_context(context_texts)
         topic = self._classify(user_query)
 
-        if topic == "income":
+        if topic == "greeting":
+            return "You're welcome! Let me know if you need help with anything else."
+
+        elif topic == "advice":
+            if data["fin_score"] is not None and data["safe_to_spend"] is not None:
+                if data["safe_to_spend"] < 0:
+                    return f"Since your Safe to Spend is {self._fmt(data['safe_to_spend'])}, you are currently over budget. The best step right now is to pause all non-essential spending (like Entertainment or Shopping) until next month."
+                elif data["fin_score"] < 500:
+                    return "Your FinScore is a bit low. To balance things, try cutting down on your top spending categories and increase your savings goal contributions."
+                else:
+                    return "You are doing well! To keep balancing your finances, stick to your category limits and keep contributing to your savings goals."
+            return "To balance your finances, try setting strict category budgets and make sure you contribute a small portion of your income to savings goals each month."
+
+        elif topic == "income":
             if data["income"] is not None:
-                return f"Your total income this month is **{self._fmt(data['income'])}**. 💰"
+                return f"Your total income this month is {self._fmt(data['income'])}. 💰"
             return "I couldn't find your income data in the current context."
 
         elif topic == "expense":
             # Check if asking about a specific category
             for cat in data["categories"]:
                 if cat.lower() in user_query.lower():
-                    return f"Your total spending on **{cat}** this month is **{self._fmt(data['categories'][cat])}**."
+                    return f"Your total spending on {cat} this month is {self._fmt(data['categories'][cat])}."
             if data["expense"] is not None:
-                resp = f"Your total expenses this month are **{self._fmt(data['expense'])}**."
+                resp = f"Your total expenses this month are {self._fmt(data['expense'])}."
                 if data["income"]:
                     pct = (data["expense"] / data["income"]) * 100
-                    resp += f" That's **{pct:.1f}%** of your income."
+                    resp += f" That's {pct:.1f}% of your income."
                 if data["categories"]:
                     top = sorted(data["categories"].items(), key=lambda x: x[1], reverse=True)[:3]
                     top_str = ", ".join([f"{c} ({self._fmt(a)})" for c, a in top])
@@ -151,10 +177,10 @@ class FinancialQAService:
 
         elif topic == "safe_to_spend":
             if data["safe_to_spend"] is not None:
-                resp = f"Your **Safe to Spend** balance is **{self._fmt(data['safe_to_spend'])}**."
+                resp = f"Your Safe to Spend balance is {self._fmt(data['safe_to_spend'])}."
                 resp += "\n\nThis is calculated as: Income − Expenses − Locked Budgets."
                 if data["safe_to_spend"] < 0:
-                    resp += "\n\n⚠️ You are currently **over budget**. Consider reducing discretionary spending."
+                    resp += "\n\n⚠️ You are currently over budget. Consider reducing discretionary spending."
                 elif data["safe_to_spend"] < 5000:
                     resp += "\n\n⚠️ Your buffer is quite low — spend carefully this month."
                 return resp
@@ -170,7 +196,7 @@ class FinancialQAService:
                     if spent > limit:
                         over_budgets.append((cat, spent, limit))
                 if over_budgets:
-                    lines = [f"• **{c}**: Spent {self._fmt(s)} (Limit: {self._fmt(l)}) — 🔴 Over by **{self._fmt(s-l)}**" for c, s, l in over_budgets]
+                    lines = [f"• {c}: Spent {self._fmt(s)} (Limit: {self._fmt(l)}) — 🔴 Over by {self._fmt(s-l)}" for c, s, l in over_budgets]
                     return "⚠️ Yes, you have exceeded your budget in the following categories:\n\n" + "\n".join(lines)
                 elif data.get("category_budgets"):
                     return "✅ No, you haven't exceeded any of your category budgets. Great job!"
@@ -182,21 +208,41 @@ class FinancialQAService:
                 if cat.lower() in uq_low:
                     spent = data.get("categories", {}).get(cat, 0.0)
                     rem = limit - spent
-                    status = f"✅ You are within budget. You have **{self._fmt(rem)}** left to spend." if rem >= 0 else f"🔴 You are **over budget** by **{self._fmt(abs(rem))}**."
-                    return f"Your budget limit for **{cat}** is **{self._fmt(limit)}**.\nYou have spent **{self._fmt(spent)}** so far.\n\n{status}"
+                    status = f"✅ You are within budget. You have {self._fmt(rem)} left to spend." if rem >= 0 else f"🔴 You are over budget by {self._fmt(abs(rem))}."
+                    return f"Your budget limit for {cat} is {self._fmt(limit)}.\nYou have spent {self._fmt(spent)} so far.\n\n{status}"
 
             if data["locked_budgets"] is not None:
                 return (
-                    f"Your total **locked-in budgets** amount is **{self._fmt(data['locked_budgets'])}**. 🔒\n\n"
+                    f"Your total locked-in budgets amount is {self._fmt(data['locked_budgets'])}. 🔒\n\n"
                     f"These are reserved funds automatically deducted from your spendable balance, "
                     f"ensuring your committed expenses are always covered."
                 )
             return "I couldn't find your budget data."
 
         elif topic == "goal":
+            uq_low = user_query.lower()
+            
+            # Specific goal query check
+            specific_goals = []
+            for name, details in data.get("goals_detail", {}).items():
+                if name.lower() in uq_low:
+                    specific_goals.append((name, details["target"], details["saved"]))
+            
+            if specific_goals:
+                lines = [f"• {n}: Saved {self._fmt(s)} out of {self._fmt(t)} target." for n, t, s in specific_goals]
+                return "Here is the status of the goal you asked about:\n\n" + "\n".join(lines)
+            
+            # General goal query check
+            if "what" in uq_low or "any" in uq_low or "list" in uq_low:
+                if data.get("goals_detail"):
+                    lines = [f"• {n}: Saved {self._fmt(d['saved'])} out of {self._fmt(d['target'])} target." for n, d in data.get("goals_detail", {}).items()]
+                    return "You have the following savings goals:\n\n" + "\n".join(lines)
+                else:
+                    return "You haven't set up any specific savings goals yet."
+
             if data["goal_savings"] is not None:
                 return (
-                    f"Your total **goal savings contributions** this month are **{self._fmt(data['goal_savings'])}**. 🎯\n\n"
+                    f"Your total goal savings contributions this month are {self._fmt(data['goal_savings'])}. 🎯\n\n"
                     f"Keep it up! Consistent contributions are the key to reaching your financial targets."
                 )
             return "I couldn't find your savings goals data."
@@ -213,18 +259,18 @@ class FinancialQAService:
                 else:
                     rating = "Needs Attention 🔴 — Focus on reducing expenses and saving more."
                 return (
-                    f"Your **FinScore** is **{score} / 1000** — {rating}\n\n"
+                    f"Your FinScore is {score} / 1000 — {rating}\n\n"
                     f"FinScore is calculated from 3 factors:\n"
-                    f"• **Expense Ratio** (how much of income you spend) — max 400 pts\n"
-                    f"• **Goal Contributions** (saving toward targets) — max 300 pts\n"
-                    f"• **Safe-to-Spend Buffer** (financial cushion) — max 300 pts"
+                    f"• Expense Ratio (how much of income you spend) — max 400 pts\n"
+                    f"• Goal Contributions (saving toward targets) — max 300 pts\n"
+                    f"• Safe-to-Spend Buffer (financial cushion) — max 300 pts"
                 )
             return "I couldn't find your FinScore."
 
         elif topic == "category":
             if data["categories"]:
                 sorted_cats = sorted(data["categories"].items(), key=lambda x: x[1], reverse=True)
-                lines = [f"• **{c}**: {self._fmt(a)}" for c, a in sorted_cats]
+                lines = [f"• {c}: {self._fmt(a)}" for c, a in sorted_cats]
                 return "Here's your spending breakdown by category this month:\n\n" + "\n".join(lines)
             return "I couldn't find your category breakdown."
 
@@ -233,7 +279,7 @@ class FinancialQAService:
                 # Most recent first
                 recent = sorted(data["transactions"], key=lambda x: x["date"], reverse=True)[:5]
                 lines = [
-                    f"• {t['date']} — **{t['type'].title()}** of {self._fmt(t['amount'])} on {t['category']}"
+                    f"• {t['date']} — {t['type'].title()} of {self._fmt(t['amount'])} on {t['category']}"
                     for t in recent
                 ]
                 return "Here are your most recent transactions:\n\n" + "\n".join(lines)
@@ -246,35 +292,35 @@ class FinancialQAService:
                 amount = self._num(m.group(1))
                 if amount <= data["safe_to_spend"]:
                     return (
-                        f"✅ Yes, you **can afford** {self._fmt(amount)}!\n\n"
-                        f"Your current Safe to Spend is **{self._fmt(data['safe_to_spend'])}**, "
-                        f"so you would still have **{self._fmt(data['safe_to_spend'] - amount)}** remaining after this purchase."
+                        f"✅ Yes, you can afford {self._fmt(amount)}!\n\n"
+                        f"Your current Safe to Spend is {self._fmt(data['safe_to_spend'])}, "
+                        f"so you would still have {self._fmt(data['safe_to_spend'] - amount)} remaining after this purchase."
                     )
                 else:
                     over = amount - data["safe_to_spend"]
                     return (
-                        f"❌ Unfortunately, you **cannot afford** {self._fmt(amount)} right now.\n\n"
-                        f"Your Safe to Spend is only **{self._fmt(data['safe_to_spend'])}**, "
-                        f"which is **{self._fmt(over)}** short. Consider waiting until next month."
+                        f"❌ Unfortunately, you cannot afford {self._fmt(amount)} right now.\n\n"
+                        f"Your Safe to Spend is only {self._fmt(data['safe_to_spend'])}, "
+                        f"which is {self._fmt(over)} short. Consider waiting until next month."
                     )
-            return f"Your current Safe to Spend balance is **{self._fmt(data['safe_to_spend'] or 0)}**. Tell me the amount you want to purchase and I'll check if you can afford it!"
+            return f"Your current Safe to Spend balance is {self._fmt(data['safe_to_spend'] or 0)}. Tell me the amount you want to purchase and I'll check if you can afford it!"
 
         elif topic == "summary":
             parts = []
             if data["income"] is not None:
-                parts.append(f"💰 **Income**: {self._fmt(data['income'])}")
+                parts.append(f"💰 Income: {self._fmt(data['income'])}")
             if data["expense"] is not None:
-                parts.append(f"💸 **Expenses**: {self._fmt(data['expense'])}")
+                parts.append(f"💸 Expenses: {self._fmt(data['expense'])}")
             if data["safe_to_spend"] is not None:
-                parts.append(f"🟢 **Safe to Spend**: {self._fmt(data['safe_to_spend'])}")
+                parts.append(f"🟢 Safe to Spend: {self._fmt(data['safe_to_spend'])}")
             if data["locked_budgets"] is not None:
-                parts.append(f"🔒 **Locked Budgets**: {self._fmt(data['locked_budgets'])}")
+                parts.append(f"🔒 Locked Budgets: {self._fmt(data['locked_budgets'])}")
             if data["goal_savings"] is not None:
-                parts.append(f"🎯 **Goal Savings**: {self._fmt(data['goal_savings'])}")
+                parts.append(f"🎯 Goal Savings: {self._fmt(data['goal_savings'])}")
             if data["fin_score"] is not None:
-                parts.append(f"📊 **FinScore**: {data['fin_score']} / 1000")
+                parts.append(f"📊 FinScore: {data['fin_score']} / 1000")
             if parts:
-                return "Here's your **financial summary** for this month:\n\n" + "\n".join(parts)
+                return "Here's your financial summary for this month:\n\n" + "\n".join(parts)
             return "I don't have enough data to generate a summary yet."
 
         else:
@@ -282,10 +328,10 @@ class FinancialQAService:
             if data["income"] or data["expense"] or data["safe_to_spend"]:
                 return (
                     f"I'm VaultMind, your personal finance assistant! Here's what I know about your finances:\n\n"
-                    + (f"• **Income**: {self._fmt(data['income'])}\n" if data['income'] else "")
-                    + (f"• **Expenses**: {self._fmt(data['expense'])}\n" if data['expense'] else "")
-                    + (f"• **Safe to Spend**: {self._fmt(data['safe_to_spend'])}\n" if data['safe_to_spend'] else "")
-                    + (f"• **FinScore**: {data['fin_score']} / 1000\n" if data['fin_score'] else "")
+                    + (f"• Income: {self._fmt(data['income'])}\n" if data['income'] else "")
+                    + (f"• Expenses: {self._fmt(data['expense'])}\n" if data['expense'] else "")
+                    + (f"• Safe to Spend: {self._fmt(data['safe_to_spend'])}\n" if data['safe_to_spend'] else "")
+                    + (f"• FinScore: {data['fin_score']} / 1000\n" if data['fin_score'] else "")
                     + "\nAsk me anything specific — income, expenses, budgets, goals, FinScore, or if you can afford a purchase!"
                 )
             return (
