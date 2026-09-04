@@ -26,6 +26,7 @@ class FinancialQAService:
             "fin_score": None,
             "savings_rate": None,
             "categories": {},       # {name: amount}
+            "category_budgets": {}, # {name: limit}
             "transactions": [],     # [{date, type, amount, category}]
         }
 
@@ -66,6 +67,11 @@ class FinancialQAService:
             m = re.search(r"spending on (.+?) is ₹([\d,\.]+)", l)
             if m:
                 data["categories"][m.group(1).strip().title()] = self._num(m.group(2))
+
+            # Budget limit lines: "I have a budget limit of ₹5000 for Entertainment."
+            m = re.search(r"budget limit of ₹([\d,\.]+) for (.+?)\.", l)
+            if m:
+                data["category_budgets"][m.group(2).strip().title()] = self._num(m.group(1))
 
             # Transaction lines: "On 2024-09-01, I had an expense of ₹500 for Shopping."
             m = re.search(r"on ([\d\-]+),\s+i had an? (\w+) of ₹([\d,\.]+) for (.+?)\.", l)
@@ -155,6 +161,30 @@ class FinancialQAService:
             return "I couldn't find your safe-to-spend balance."
 
         elif topic == "budget":
+            # Check for over-budget query
+            uq_low = user_query.lower()
+            if "over" in uq_low or "exceed" in uq_low or "any" in uq_low:
+                over_budgets = []
+                for cat, limit in data.get("category_budgets", {}).items():
+                    spent = data.get("categories", {}).get(cat, 0.0)
+                    if spent > limit:
+                        over_budgets.append((cat, spent, limit))
+                if over_budgets:
+                    lines = [f"• **{c}**: Spent {self._fmt(s)} (Limit: {self._fmt(l)}) — 🔴 Over by **{self._fmt(s-l)}**" for c, s, l in over_budgets]
+                    return "⚠️ Yes, you have exceeded your budget in the following categories:\n\n" + "\n".join(lines)
+                elif data.get("category_budgets"):
+                    return "✅ No, you haven't exceeded any of your category budgets. Great job!"
+                else:
+                    return "You haven't set any specific category budgets yet."
+
+            # Check if asking about a specific category
+            for cat, limit in data.get("category_budgets", {}).items():
+                if cat.lower() in uq_low:
+                    spent = data.get("categories", {}).get(cat, 0.0)
+                    rem = limit - spent
+                    status = f"✅ You are within budget. You have **{self._fmt(rem)}** left to spend." if rem >= 0 else f"🔴 You are **over budget** by **{self._fmt(abs(rem))}**."
+                    return f"Your budget limit for **{cat}** is **{self._fmt(limit)}**.\nYou have spent **{self._fmt(spent)}** so far.\n\n{status}"
+
             if data["locked_budgets"] is not None:
                 return (
                     f"Your total **locked-in budgets** amount is **{self._fmt(data['locked_budgets'])}**. 🔒\n\n"
