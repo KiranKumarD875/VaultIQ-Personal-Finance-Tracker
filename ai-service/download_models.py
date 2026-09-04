@@ -1,11 +1,10 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from langchain_community.embeddings import HuggingFaceEmbeddings
+import os
 
-print("Downloading LLM (Qwen/Qwen2.5-0.5B-Instruct)...")
-AutoTokenizer.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct")
-AutoModelForCausalLM.from_pretrained("Qwen/Qwen2.5-0.5B-Instruct")
+MODEL_NAME = "Qwen/Qwen2.5-0.5B-Instruct"
 
-print("Downloading Embeddings (all-MiniLM-L6-v2)...")
-HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+print(f"Downloading LLM ({MODEL_NAME})...")
+AutoTokenizer.from_pretrained(MODEL_NAME)
+AutoModelForCausalLM.from_pretrained(MODEL_NAME)
 
 print("All models downloaded and cached successfully!")

@@ -1,14 +1,10 @@
 import os
-from langchain.text_splitter import CharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from transformers import pipeline, AutoTokenizer, AutoModelForCausalLM
 import threading
 
 class LocalRAGService:
     def __init__(self):
-        print("Loading local LLM & Embeddings synchronously...", flush=True)
-        self.embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+        print("Loading local LLM...", flush=True)
         
         try:
             model_id = "Qwen/Qwen2.5-0.5B-Instruct"
