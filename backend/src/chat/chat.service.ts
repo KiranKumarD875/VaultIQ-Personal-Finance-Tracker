@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { TransactionsService } from '../transactions/transactions.service';
 import { BudgetsService } from '../budgets/budgets.service';
 import { GoalsService } from '../goals/goals.service';
@@ -9,6 +10,7 @@ export class ChatService {
     private readonly transactionsService: TransactionsService,
     private readonly budgetsService: BudgetsService,
     private readonly goalsService: GoalsService,
+    private readonly configService: ConfigService,
   ) {}
 
   async processMessage(userId: string, message: string, history: any[] = []): Promise<{ text: string }> {
@@ -17,7 +19,7 @@ export class ChatService {
       const txnHistory = await this.transactionsService.getHistoryForAI(userId, 30);
       const context_data = txnHistory.map(t => `On ${t.date}, I had an ${t.type.toLowerCase()} of ₹${t.amount} for ${t.category}.`);
       
-      // Also inject current safe-to-spend and finScore
+      // Inject current summary metrics
       const now = new Date();
       const summary: any = await this.transactionsService.getSummary(userId, now.getMonth() + 1, now.getFullYear());
       context_data.push(`My current safe-to-spend balance is ₹${summary.safeToSpend || 0}.`);
@@ -29,11 +31,11 @@ export class ChatService {
       
       if (summary.categoryBreakdown) {
         for (const [category, amount] of Object.entries(summary.categoryBreakdown)) {
-          context_data.push(`My total expenses for ${category} this month are ₹${amount}.`);
+          context_data.push(`My spending on ${category} is ₹${amount}.`);
         }
       }
 
-      // 1.5 Get budget context
+      // Budget context
       try {
         const budgets = await this.budgetsService.findAll(userId, now.getMonth() + 1, now.getFullYear());
         if (budgets && budgets.length > 0) {
@@ -46,24 +48,23 @@ export class ChatService {
         console.error('Failed to load budgets for AI context', err);
       }
       
-      // 1.8 Get goals context
+      // Goals context
       try {
         const goals = await this.goalsService.findAll(userId);
         if (goals && goals.length > 0) {
           for (const goal of goals) {
-            context_data.push(`I have a savings goal called "${goal.name}" with a target amount of ₹${goal.target_amount} and I have currently saved ₹${goal.current_amount}.`);
+            context_data.push(`I have a savings goal called "${goal.name}" with a target of ₹${goal.target_amount} and I have saved ₹${goal.current_amount} so far.`);
           }
         }
       } catch (err) {
         console.error('Failed to load goals for AI context', err);
       }
       
-      // 2. Call local Python RAG LLM
-      const aiResponse = await fetch('http://ai-service:8000/api/v1/chat/', {
+      // 2. Call AI service — uses AI_SERVICE_URL env var so it works both locally (Docker) and on Render
+      const aiServiceUrl = this.configService.get<string>('aiServiceUrl') || 'http://ai-service:8000';
+      const aiResponse = await fetch(`${aiServiceUrl}/api/v1/chat/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: message,
           context_data: context_data,
@@ -78,8 +79,8 @@ export class ChatService {
       const data = await aiResponse.json();
       return { text: data.response };
     } catch (error) {
-      console.error('Error calling local RAG LLM:', error);
-      return { text: 'Sorry, my local LLM is still loading or currently unavailable. Please try again in a moment!' };
+      console.error('Error calling AI service:', error);
+      return { text: 'VaultMind is temporarily unreachable. Please check that the AI service is running and try again.' };
     }
   }
 }
