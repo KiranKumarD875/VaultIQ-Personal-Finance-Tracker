@@ -1,168 +1,196 @@
 'use client';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, Bot, LineChart, ShieldCheck, Zap } from 'lucide-react';
+import { ArrowRight, PieChart, ShieldCheck, TrendingUp, Sparkles, LayoutDashboard } from 'lucide-react';
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50 overflow-hidden font-sans selection:bg-emerald-500/30">
-      {/* Dynamic Background Gradients */}
-      <div className="absolute top-0 -left-1/4 w-1/2 h-1/2 bg-emerald-500/20 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-      <div className="absolute bottom-0 -right-1/4 w-1/2 h-1/2 bg-blue-500/10 blur-[120px] rounded-full mix-blend-screen pointer-events-none" />
-
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans selection:bg-emerald-200">
+      
       {/* Navbar */}
-      <nav className="relative z-10 border-b border-white/10 bg-slate-950/50 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-200/60">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-              <span className="font-bold text-white text-lg leading-none">V</span>
+            <div className="w-7 h-7 rounded-md bg-emerald-600 flex items-center justify-center">
+              <span className="font-bold text-white text-sm leading-none">V</span>
             </div>
-            <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+            <span className="text-xl font-bold tracking-tight text-slate-900">
               VaultIQ
             </span>
           </div>
-          <div className="flex items-center gap-6 text-sm font-medium">
-            <Link href="/login" className="text-slate-300 hover:text-white transition-colors">
-              Sign In
+          <div className="flex items-center gap-4 text-sm font-medium">
+            <Link href="/login" className="text-slate-600 hover:text-slate-900 transition-colors px-3 py-2">
+              Log in
             </Link>
-            <Link href="/register" className="bg-white text-slate-950 px-5 py-2.5 rounded-full hover:bg-slate-200 transition-all shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)]">
+            <Link href="/register" className="bg-slate-900 text-white px-4 py-2 rounded-full hover:bg-slate-800 transition-all shadow-sm">
               Get Started
             </Link>
           </div>
         </div>
       </nav>
 
-      <main className="relative z-10">
+      <main className="pt-32 pb-20 relative overflow-hidden">
+        
+        {/* Subtle Background Elements */}
+        <div className="absolute top-0 right-0 -z-10 w-[800px] h-[600px] opacity-30 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-bl from-emerald-100 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4" />
+        </div>
+
         {/* Hero Section */}
-        <section className="pt-32 pb-20 px-6 max-w-7xl mx-auto text-center">
+        <section className="px-6 max-w-5xl mx-auto text-center mb-24">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: "easeOut" }}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-8"
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold uppercase tracking-wider mb-8"
           >
-            <Bot size={16} />
-            <span>VaultMind AI Engine 2.0 Now Live</span>
+            <Sparkles size={14} className="text-emerald-500" />
+            <span>The New Standard in Personal Finance</span>
           </motion.div>
 
           <motion.h1 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: "easeOut" }}
-            className="text-6xl md:text-8xl font-extrabold tracking-tight mb-8"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]"
           >
-            Smarter Finance, <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-              Zero Effort.
-            </span>
+            Master your money. <br />
+            <span className="text-emerald-600">Without the spreadsheets.</span>
           </motion.h1>
 
           <motion.p 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.2, ease: "easeOut" }}
-            className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto mb-12 leading-relaxed"
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-lg md:text-xl text-slate-500 max-w-2xl mx-auto mb-10 leading-relaxed"
           >
-            VaultIQ is your AI-powered financial brain. Automatically track spending, manage dynamic budgets, and chat with VaultMind to make precise financial decisions in seconds.
+            VaultIQ gives you total clarity over your finances. Track spending, lock in budgets, and get AI-driven insights to grow your wealth—all in one beautiful dashboard.
           </motion.p>
 
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
-            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-3"
           >
-            <Link href="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white px-8 py-4 rounded-full font-semibold text-lg hover:from-emerald-400 hover:to-emerald-500 transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transform hover:-translate-y-0.5">
-              Start Building Wealth
-              <ArrowRight size={20} />
+            <Link href="/register" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-600 text-white px-8 py-3.5 rounded-full font-medium text-base hover:bg-emerald-700 transition-colors shadow-sm hover:shadow-md">
+              Start for free
+              <ArrowRight size={18} />
             </Link>
-            <a href="#features" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-slate-800/50 border border-slate-700 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-slate-800 transition-all">
-              See How It Works
+            <a href="#bento" className="w-full sm:w-auto flex items-center justify-center gap-2 bg-white border border-slate-200 text-slate-700 px-8 py-3.5 rounded-full font-medium text-base hover:bg-slate-50 hover:text-slate-900 transition-colors shadow-sm">
+              See how it works
             </a>
           </motion.div>
         </section>
 
-        {/* Feature Cards Showcase */}
-        <section id="features" className="py-24 px-6 max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-3 gap-6">
+        {/* Bento Grid Features */}
+        <section id="bento" className="px-6 max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-3 gap-6 auto-rows-[320px]">
+            
+            {/* Main Feature - AI Chat */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm hover:bg-slate-900 transition-colors"
+              className="md:col-span-2 bg-white rounded-3xl p-8 border border-slate-200 shadow-sm overflow-hidden relative group"
             >
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center mb-6 text-blue-400">
-                <Bot size={24} />
+              <div className="relative z-10 w-2/3">
+                <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center mb-6">
+                  <Sparkles size={20} className="text-emerald-600" />
+                </div>
+                <h3 className="text-2xl font-bold mb-3 text-slate-900">VaultMind AI Assistant</h3>
+                <p className="text-slate-500 text-base leading-relaxed">
+                  Stop doing math. Ask "Can I afford dinner tonight?" or "How much did I spend on groceries?" and get instant, accurate answers based on your actual data.
+                </p>
               </div>
-              <h3 className="text-xl font-bold mb-3">VaultMind Assistant</h3>
-              <p className="text-slate-400 leading-relaxed">
-                Chat naturally with your data. Ask "Can I afford this?" or "Am I over budget?" and get instant, math-backed answers.
-              </p>
+              
+              {/* Fake UI Element */}
+              <div className="absolute right-0 bottom-0 translate-x-8 translate-y-8 w-80 bg-slate-50 border border-slate-200 rounded-2xl p-4 shadow-xl group-hover:-translate-y-2 transition-transform duration-500">
+                <div className="flex items-start gap-3 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-emerald-700">V</span>
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-2xl rounded-tl-none p-3 shadow-sm text-sm text-slate-700">
+                    ✅ Yes, you can afford it! You have ₹4,200 remaining in your Safe to Spend balance.
+                  </div>
+                </div>
+              </div>
             </motion.div>
 
+            {/* Feature - FinScore */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm hover:bg-slate-900 transition-colors"
+              transition={{ delay: 0.1 }}
+              className="bg-slate-900 rounded-3xl p-8 shadow-sm relative overflow-hidden flex flex-col justify-between"
             >
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center mb-6 text-emerald-400">
-                <LineChart size={24} />
+              <div className="relative z-10">
+                <h3 className="text-xl font-bold mb-3 text-white">Your FinScore</h3>
+                <p className="text-slate-400 text-sm">Real-time financial health scoring based on savings and spending habits.</p>
               </div>
-              <h3 className="text-xl font-bold mb-3">Real-time FinScore</h3>
-              <p className="text-slate-400 leading-relaxed">
-                Watch your financial health improve in real-time. We calculate a dynamic score based on your savings, expenses, and safety buffer.
-              </p>
+              <div className="relative z-10 flex items-end gap-2 mt-auto">
+                <div className="text-6xl font-bold text-white tracking-tighter">780</div>
+                <div className="text-emerald-400 text-sm font-medium mb-2 flex items-center">
+                  <TrendingUp size={16} className="mr-1" /> Excellent
+                </div>
+              </div>
+              <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
             </motion.div>
 
+            {/* Feature - Locked Budgets */}
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 backdrop-blur-sm hover:bg-slate-900 transition-colors"
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden"
             >
-              <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center mb-6 text-purple-400">
-                <ShieldCheck size={24} />
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center mb-6">
+                <ShieldCheck size={20} className="text-blue-600" />
               </div>
-              <h3 className="text-xl font-bold mb-3">Locked-In Budgets</h3>
-              <p className="text-slate-400 leading-relaxed">
-                Never accidentally spend rent money again. VaultIQ automatically isolates committed funds so you only see what's truly safe to spend.
+              <h3 className="text-xl font-bold mb-3 text-slate-900">Locked-in Budgets</h3>
+              <p className="text-slate-500 text-sm">
+                Reserve funds for rent and bills automatically. You only see what's truly safe to spend.
               </p>
             </motion.div>
-          </div>
-        </section>
 
-        {/* Mini Preview Section */}
-        <section className="py-24 px-6 relative">
-          <div className="max-w-5xl mx-auto bg-gradient-to-b from-slate-800/80 to-slate-900/80 p-1 rounded-3xl border border-slate-700/50 shadow-2xl overflow-hidden">
-            <div className="bg-slate-950 rounded-[22px] p-8 md:p-12 relative overflow-hidden flex flex-col items-center text-center">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 blur-[80px] rounded-full pointer-events-none" />
-              <Zap className="text-emerald-400 mb-6 w-12 h-12" />
-              <h2 className="text-3xl md:text-5xl font-bold mb-6">Ready to take control?</h2>
-              <p className="text-slate-400 text-lg mb-8 max-w-xl mx-auto">
-                Join users who are already saving thousands by letting VaultIQ handle the complex math of personal finance.
+            {/* Feature - Dashboard */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="md:col-span-2 bg-emerald-50 rounded-3xl p-8 border border-emerald-100 shadow-sm flex flex-col justify-center items-center text-center relative overflow-hidden"
+            >
+              <LayoutDashboard size={32} className="text-emerald-600 mb-4" />
+              <h3 className="text-2xl font-bold mb-3 text-emerald-900">Crystal Clear Analytics</h3>
+              <p className="text-emerald-700/80 text-base max-w-md mx-auto mb-6">
+                Understand exactly where your money goes with beautiful, interactive charts and automatic categorization.
               </p>
-              <Link href="/register" className="bg-white text-slate-950 px-8 py-4 rounded-full font-semibold text-lg hover:bg-slate-200 transition-all shadow-[0_0_30px_rgba(255,255,255,0.15)]">
-                Create Free Account
+              <Link href="/register" className="bg-emerald-600 text-white px-6 py-2.5 rounded-full font-medium text-sm hover:bg-emerald-700 transition-colors shadow-sm">
+                Get Started Today
               </Link>
-            </div>
+            </motion.div>
+
           </div>
         </section>
       </main>
 
-      <footer className="border-t border-white/10 mt-auto bg-slate-950/80">
+      <footer className="border-t border-slate-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2 text-slate-400">
-            <span className="font-bold text-white">VaultIQ</span> © {new Date().getFullYear()}
+          <div className="flex items-center gap-2 text-slate-500 text-sm">
+            <div className="w-5 h-5 rounded bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-[10px]">V</div>
+            <span>VaultIQ © {new Date().getFullYear()}. All rights reserved.</span>
           </div>
-          <div className="text-sm text-slate-500">
-            Powered by Render & Vercel
+          <div className="flex gap-6 text-sm font-medium text-slate-500">
+            <span className="hover:text-slate-900 cursor-pointer transition-colors">Privacy</span>
+            <span className="hover:text-slate-900 cursor-pointer transition-colors">Terms</span>
+            <span className="hover:text-slate-900 cursor-pointer transition-colors">Security</span>
           </div>
         </div>
       </footer>
+
     </div>
   );
 }
