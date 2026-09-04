@@ -1,0 +1,88 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: finsight-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-finsight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-finsight_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-finsight_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-finsight} -d ${POSTGRES_DB:-finsight_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - finsight-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: finsight-redis
+    restart: unless-stopped
+    networks:
+      - finsight-net
+
+  ai-service:
+    build: ./ai-service
+    container_name: finsight-ai-service
+    restart: unless-stopped
+    volumes:
+      - ./ai-service/saved_models:/app/saved_models
+    environment:
+      - PORT=8000
+    networks:
+      - finsight-net
+
+  backend:
+    build: ./backend
+    container_name: finsight-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      ai-service:
+        condition: service_started
+    environment:
+      - PORT=4000
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER:-finsight}
+      - DB_PASSWORD=${POSTGRES_PASSWORD:-finsight_pass}
+      - DB_NAME=${POSTGRES_DB:-finsight_db}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET:-super_secret_change_me}
+      - JWT_EXPIRES_IN=7d
+      - AI_SERVICE_URL=http://ai-service:8000
+      - CORS_ORIGIN=http://localhost:3000
+    networks:
+      - finsight-net
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: /api
+    environment:
+      - BACKEND_URL=http://backend:4000
+    container_name: finsight-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+    networks:
+      - finsight-net
+
+volumes:
+  postgres_data:
+
+networks:
+  finsight-net:
+    driver: bridge

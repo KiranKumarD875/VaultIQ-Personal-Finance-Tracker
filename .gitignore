@@ -1,0 +1,62 @@
+# ============================================================
+# NODE / NEXT.JS / NESTJS
+# ============================================================
+node_modules/
+.next/
+dist/
+build/
+.pnp
+.pnp.js
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ============================================================
+# PYTHON / AI SERVICE
+# ============================================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+venv/
+.venv/
+env/
+*.h5
+*.pkl
+
+# Hugging Face / Transformers downloaded models (too large for GitHub)
+ai-service/local_models/
+ai-service/saved_models/
+
+# ============================================================
+# ENVIRONMENT / SECRETS  ← NEVER commit these
+# ============================================================
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# ============================================================
+# BUILD ARTIFACTS & CACHES
+# ============================================================
+.cache/
+.turbo/
+*.tsbuildinfo
+.eslintcache
+
+# ============================================================
+# OS / EDITOR
+# ============================================================
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+
+# ============================================================
+# MISC
+# ============================================================
+tmp.json
