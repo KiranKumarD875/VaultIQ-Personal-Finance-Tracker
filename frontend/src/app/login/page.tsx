@@ -29,7 +29,7 @@ export default function LoginPage() {
       setAuth(res.data.user, res.data.access_token);
       router.push('/dashboard');
     } catch (err: any) {
-      setServerError(err.response?.data?.message || 'Login failed');
+      const msg = err.response?.data?.message; setServerError(typeof msg === 'string' ? msg : (Array.isArray(msg?.message) ? msg.message[0] : (msg?.message || 'Login failed')));
     } finally {
       setLoading(false);
     }
